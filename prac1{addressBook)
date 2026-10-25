@@ -1,0 +1,58 @@
+
+#!/bin/bash
+
+while true
+do
+    echo "1.Create  2.View  3.Insert  4.Delete  5.Modify  6.Exit"
+    read ch
+
+    case $ch in
+        1)
+            > address.txt
+            echo "Enter number of records:"
+            read n
+
+            for ((i=1; i<=n; i++))
+            do
+                echo "Enter name, phone, email:"
+                read name phone email
+                echo "$name|$phone|$email" >> address.txt
+            done
+            ;;
+
+        2)
+            cat address.txt
+            ;;
+
+        3)
+            echo "Enter name, phone, email:"
+            read name phone email
+            echo "$name|$phone|$email" >> address.txt
+            ;;
+
+        4)
+            echo "Enter name to delete:"
+            read name
+            grep -v "^$name|" address.txt > temp.txt
+            mv temp.txt address.txt
+            ;;
+
+        5)
+            echo "Enter name to modify:"
+            read name
+            grep -v "^$name|" address.txt > temp.txt
+            echo "Enter new name, phone, email:"
+            read newname phone email
+            echo "$newname|$phone|$email" >> temp.txt
+            mv temp.txt address.txt
+            ;;
+
+        6)
+            exit
+            ;;
+
+        *)
+            echo "Invalid choice"
+            ;;
+    esac
+done
