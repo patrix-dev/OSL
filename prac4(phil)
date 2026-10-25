@@ -1,0 +1,74 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <semaphore.h>
+#include <pthread.h>
+
+sem_t room, ch[5];
+
+void *philosopher(void *arg)
+{
+    int i = *(int *)arg;
+
+    printf("Philosopher %d called the routine..\n", i);
+
+    sem_wait(&room);
+
+    printf("Philosopher %d entered the routine..\n", i);
+
+    sem_wait(&ch[i]);
+    sem_wait(&ch[(i + 1) % 5]);
+
+    printf("Philosopher %d is eating\n", i);
+
+    sleep(1);
+
+    sem_post(&ch[(i + 1) % 5]);
+    sem_post(&ch[i]);
+    sem_post(&room);
+
+    return NULL;
+}
+
+int main()
+{
+    int n;
+
+    printf("Enter number of philosophers (1-5): ");
+    scanf("%d", &n);
+
+    if (n < 1 || n > 5)
+    {
+        printf("Invalid number of philosophers!\n");
+        return 1;
+    }
+
+    pthread_t p[n];
+    int id[n];
+
+    sem_init(&room, 0, 4);
+
+    for (int i = 0; i < 5; i++)
+    {
+        sem_init(&ch[i], 0, 1);
+    }
+
+    for (int i = 0; i < n; i++)
+    {
+        id[i] = i;
+        pthread_create(&p[i], NULL, philosopher, (void *)&id[i]);
+    }
+
+    for (int i = 0; i < n; i++)
+    {
+        pthread_join(p[i], NULL);
+    }
+
+    sem_destroy(&room);
+
+    for (int i = 0; i < 5; i++)
+    {
+        sem_destroy(&ch[i]);
+    }
+
+    return 0;
+}
