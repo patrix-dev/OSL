@@ -1,0 +1,69 @@
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+
+int main()
+{
+    int desp1[2], desp2[2], fd, n;
+    char buffer[200];
+    char filename[200] = {'\0'};
+    pid_t pid;
+
+    pipe(desp1);
+    pipe(desp2);
+
+    pid = fork();
+
+    if (pid > 0)
+    {
+        close(desp1[0]);
+        close(desp2[1]);
+
+        printf("Enter pathname: ");
+        scanf("%199s", filename);
+
+        write(desp1[1], filename, sizeof(filename));
+        close(desp1[1]);
+
+        while ((n = read(desp2[0], buffer, sizeof(buffer))) > 0)
+        {
+            write(1, buffer, n);
+        }
+
+        close(desp2[0]);
+    }
+    else if (pid == 0)
+    {
+        close(desp1[1]);
+        close(desp2[0]);
+
+        read(desp1[0], filename, sizeof(filename));
+        close(desp1[0]);
+
+        fd = open(filename, O_RDONLY);
+
+        if (fd == -1)
+        {
+            char msg[] = "File does not exist or cannot be opened.\n";
+            write(desp2[1], msg, sizeof(msg) - 1);
+        }
+        else
+        {
+            while ((n = read(fd, buffer, sizeof(buffer))) > 0)
+            {
+                write(desp2[1], buffer, n);
+            }
+
+            close(fd);
+        }
+
+        close(desp2[1]);
+    }
+    else
+    {
+        printf("Process creation failed\n");
+    }
+
+    return 0;
+}
