@@ -1,1 +1,95 @@
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
 
+sem_t w, r;
+int read_count = 0, data = 0;
+
+void *writer(void *arg)
+{
+    int value = *(int *)arg;
+
+    sem_wait(&w);
+    data = value;
+    printf("Writer wrote: %d\n", data);
+    sem_post(&w);
+
+    return NULL;
+}
+
+void *reader(void *arg)
+{
+    int id = *(int *)arg;
+
+    sem_wait(&r);
+    read_count++;
+
+    if (read_count == 1)
+        sem_wait(&w);
+
+    sem_post(&r);
+
+    printf("Reader %d read: %d\n", id, data);
+    sleep(1);
+
+    sem_wait(&r);
+    read_count--;
+
+    if (read_count == 0)
+        sem_post(&w);
+
+    sem_post(&r);
+
+    return NULL;
+}
+
+int main()
+{
+    pthread_t wt[10], rt[10];
+    int wd[10], rd[10];
+    int nw, nr;
+
+    printf("Enter number of writers (max 10): ");
+    scanf("%d", &nw);
+
+    printf("Enter number of readers (max 10): ");
+    scanf("%d", &nr);
+
+    if (nw < 1 || nw > 10 || nr < 1 || nr > 10)
+    {
+        printf("Invalid input!");
+        return 1;
+    }
+
+    printf("\nEnter writer data:\n");
+
+    for (int i = 0; i < nw; i++)
+    {
+        printf("Writer %d: ", i + 1);
+        scanf("%d", &wd[i]);
+    }
+
+    sem_init(&w, 0, 1);
+    sem_init(&r, 0, 1);
+
+    for (int i = 0; i < nw; i++)
+        pthread_create(&wt[i], NULL, writer, &wd[i]);
+
+    for (int i = 0; i < nr; i++)
+    {
+        rd[i] = i + 1;
+        pthread_create(&rt[i], NULL, reader, &rd[i]);
+    }
+
+    for (int i = 0; i < nw; i++)
+        pthread_join(wt[i], NULL);
+
+    for (int i = 0; i < nr; i++)
+        pthread_join(rt[i], NULL);
+
+    sem_destroy(&w);
+    sem_destroy(&r);
+
+    return 0;
+}
